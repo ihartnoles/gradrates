@@ -456,9 +456,9 @@ $(document).ready(function() {
 			}
 			var oTable = $(this).dataTable(opt);
 			$('.dataTables_filter input').attr("placeholder", "Search here...");
-			$(".dataTables_length select").wrap("<div class='input-mini'></div>").chosen({
-				disable_search_threshold: 9999999
-			});
+			// $(".dataTables_length select").wrap("<div class='input-mini'></div>").chosen({
+			// 	disable_search_threshold: 9999999
+			// });
 			$("#check_all").click(function(e){
 				$('input', oTable.fnGetNodes()).prop('checked',this.checked);
 			});

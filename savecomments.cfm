@@ -1,11 +1,13 @@
+<!---
 <cfdump var="#form#" label="savecomments.cfm" type="html" output="C:\inetpub\wwwroot\atrisk\comments.html" />
+--->
 
 <cfquery name="savecomment" datasource="#application.dsn#">
 	INSERT INTO comments (student_course_id, comments, created_by)
 	VALUES (
 			 <cfqueryparam value="#form.students_courses_id#" CFSQLType="cf_sql_integer" />,
 			 <cfqueryparam value="#form.comment#" CFSQLType="cf_sql_varchar" />,
-			 <cfqueryparam value="#form.created_by#" CFSQLType="cf_sql_varchar" />
+			 <cfqueryparam value="#session.casuser.getusername()#" CFSQLType="cf_sql_varchar" />
 			)
 </cfquery>
 

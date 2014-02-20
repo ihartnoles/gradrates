@@ -1,6 +1,6 @@
 <div id="navigation">
 		<div class="container-fluid">
-			<a href="##" id="brand">
+			<a href="index.cfm" id="brand">
 			<cfoutput>
 				#application.displayname#
 			</cfoutput></a>
@@ -10,16 +10,19 @@
 			--->
 			
 			<ul class='main-nav'>
+				<!---
 				<li class='active'>
 					<a href="index.cfm">
 						<span>Course Listing</span>
 					</a>
 				</li>
+				--->
 				
 				<!---
 					<cfdump var="#session#" label="dash_navigation" abort="true"/>
 				--->
-
+				
+				<!---
 				<li>
 					<a href="##" data-toggle="dropdown" class='dropdown-toggle'>
 						<span>Navigate</span>
@@ -40,7 +43,7 @@
 						</li>						
 					</ul>
 				</li>
-				
+				--->
 				
 				
 				
