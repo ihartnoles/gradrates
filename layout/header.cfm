@@ -27,8 +27,19 @@
 	<link rel="stylesheet" href="css/style.css">
 	<!-- Color CSS -->
 	<link rel="stylesheet" href="css/themes.css">
-
-
+	
+	<style type="text/css">
+		.loader {
+			position: fixed;
+			left: 0px;
+			top: 0px;
+			width: 100%;
+			height: 100%;
+			z-index: 9999;
+			background: url('img/page-loader.gif') 50% 50% no-repeat rgb(249,249,249);
+		}
+	</style>
+	
 	<!-- jQuery -->
 	<script src="js/jquery.min.js"></script>
 	
@@ -56,6 +67,9 @@
 	<script src="js/plugins/datatable/ColVis.min.js"></script>
 	<script src="js/plugins/datatable/jquery.dataTables.columnFilter.js"></script>
 	
+	<!-- Notify -->
+	<script src="js/plugins/gritter/jquery.gritter.min.js"></script>
+	
 	<!-- Theme framework -->
 	<script src="js/eakroko.js"></script>
 	<!-- Theme scripts 
@@ -78,5 +92,10 @@
 	<link rel="shortcut icon" href="img/favicon.ico" />
 	<!-- Apple devices Homescreen icon -->
 	<link rel="apple-touch-icon-precomposed" href="img/apple-touch-icon-precomposed.png" />
-
+	
+	<script type="text/javascript">
+	$(window).load(function() {
+		$(".loader").fadeOut("slow");
+	})
+	</script>
 </head>

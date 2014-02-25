@@ -1,64 +1,191 @@
+<cfinclude template="securityrestrictions.cfm" />
+
+
 <cfinclude template="layout/header.cfm" />
 
-
 <cfparam name="url.course_dept" default="" />
+<cfparam name="url.course_college" default="" />
 
-<!--- faculty detail query 
+<!--- faculty detail query --->
 <cfquery name="getFacultyList" datasource="#application.dsn#">
-	SELECT   DISTINCT     Courses.course_sub, Courses.course_num, Courses.course_title, Courses.course_crn, Professors.prof_id, Professors.prof_first_name, Professors.prof_last_name
+	SELECT   DISTINCT     Courses.*, Professors.prof_id, Professors.prof_first_name, Professors.prof_last_name
 	FROM     Courses INNER JOIN
                          Professors_Courses ON Courses.id = Professors_Courses.course_id INNER JOIN
                          Professors ON Professors_Courses.prof_id = Professors.id
-	WHERE course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	WHERE 0=0
+	
+	<cfif len(trim(url.course_dept))>
+	AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+	
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
 
 	ORDER BY prof_last_name, course_title
 </cfquery>
---->
 
-<cfquery name="getFacultyList" datasource="#application.dsn#">
-	SELECT   DISTINCT     Professors.prof_id, Professors.prof_first_name, Professors.prof_last_name
-	FROM     Courses INNER JOIN
-                         Professors_Courses ON Courses.id = Professors_Courses.course_id INNER JOIN
-                         Professors ON Professors_Courses.prof_id = Professors.id
-	WHERE course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+<!---
+<cfquery name="getFacultyList" datasource="#application.dsn#" >
+	SELECT  DISTINCT      Professors.prof_id, Professors.prof_first_name, Professors.prof_last_name, Professors_Courses.course_id, Courses.course_crn, Status.status
+FROM            Professors FULL OUTER JOIN
+                         Professors_Courses ON Professors.id = Professors_Courses.prof_id FULL OUTER JOIN
+                         Courses ON Professors_Courses.course_id = Courses.id FULL OUTER JOIN
+                         Students_Courses ON Professors_Courses.course_id = Students_Courses.course_id FULL OUTER JOIN
+                         Status ON Students_Courses.id = Status.student_course_id
+	WHERE 0=0
+	
+	<cfif len(trim(url.course_dept))>
+	AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+	
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
 
 	ORDER BY  Professors.prof_last_name
 </cfquery>
+ --->
 
-<!--
-<cfdump var="#getFacultyList#" label="getFacultyList" />
--->
+ <!---
+<cfdump var="#getFacultyList#" label="getFacultyList - facultylist.cfm - line 46" />
+ --->
 
+ <cfquery name="getFacultyZnumbers" datasource="#application.dsn#" >
+ SELECT   DISTINCT   Professors.prof_id
+	FROM            Professors INNER JOIN
+	                         Professors_Courses ON Professors.id = Professors_Courses.prof_id INNER JOIN
+	                         Courses ON Professors_Courses.course_id = Courses.id INNER JOIN
+	                         Students_Courses ON Professors_Courses.course_id = Students_Courses.course_id INNER JOIN
+	                         Status ON Students_Courses.id = Status.student_course_id
+	WHERE  0=0
+
+	AND status.status = 1
+	
+	<cfif len(trim(url.course_dept))>
+		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+ORDER BY Professors.prof_id
+</cfquery>
+
+<!---
+<cfdump var="#getFacultyZnumbers#" label="getFacultyZnumbers" />
+
+<cfdump var="#ValueList(getFacultyZnumbers.prof_id)#" label="znumbervaluelist" />
+ --->
 
 <cfquery name="getStudentList" datasource="#application.dsn#">
-	SELECT  DISTINCT      Students.student_id AS znumber, Students.student_last_name, Students.student_first_name, Students.student_middle_i, (SELECT count(*)
-			 FROM       Status INNER JOIN
-						Students_Courses ON Status.student_course_id = Students_Courses.id 
-			 WHERE      students_courses.student_id =   Students.id
-			 AND status.status = 1
-			
-			) as status
+	SELECT   DISTINCT  Students.student_id AS znumber, Students.student_last_name, Students.student_first_name, Students.student_middle_i, courses.course_crn
 
 	FROM            Students INNER JOIN
                          Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
-                         Courses ON Students_Courses.course_id = Courses.id
-	WHERE course_dept = <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+                         Courses ON Students_Courses.course_id = Courses.id LEFT OUTER JOIN
+                         Status ON Students_Courses.id = Status.student_course_id
+    WHERE 0=0
+	
+	<cfif len(trim(url.course_dept))>
+		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>	
 
-	ORDER BY Students.student_last_name
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+
+	ORDER BY Students.student_last_name, Students.student_id
 </cfquery>
 
-<!-- 
-<cfdump var="#getStudentList#" label="getFacultyList" />
--->
+<cfquery name="getStudentZnumbersAtRisk" datasource="#application.dsn#" >
+	SELECT Students.student_id
+			 FROM       Status INNER JOIN
+						Students_Courses ON Status.student_course_id = Students_Courses.id INNER JOIN
+						Students ON Students.id = Students_Courses.student_id  INNER JOIN
+                         Courses ON Students_Courses.course_id = Courses.id
+			 WHERE      students_courses.student_id =   Students.id
+			 AND status.status = 1
+
+	<cfif len(trim(url.course_dept))>
+		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>	
+
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+</cfquery>
+
+<cfquery name="getStudentZnumbersOutreach" datasource="#application.dsn#" >
+	SELECT Students.student_id
+			 FROM       Status INNER JOIN
+						Students_Courses ON Status.student_course_id = Students_Courses.id INNER JOIN
+						Students ON Students.id = Students_Courses.student_id  INNER JOIN
+                         Courses ON Students_Courses.course_id = Courses.id
+			 WHERE      students_courses.student_id =   Students.id
+			 AND status.status = 3
+
+	<cfif len(trim(url.course_dept))>
+		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>	
+
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+</cfquery>
+
+ 
+<!---
+<cfquery name="getStudentList" datasource="#application.dsn#">
+ SELECT DISTINCT      Students.student_id AS znumber, Students.student_last_name, Students.student_first_name, Students.student_middle_i , Status.status
+
+	FROM            Students INNER JOIN
+                         Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
+                         Courses ON Students_Courses.course_id = Courses.id LEFT OUTER JOIN
+                         Status ON Students_Courses.id = Status.student_course_id
+    WHERE 0=0
+
+	<cfif len(trim(url.course_dept))>
+		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>	
+
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+
+	ORDER BY Students.student_last_name
+ </cfquery>                        
+--->
+
 
 <!--- get course list --->
 <cfquery name="getCourseList" datasource="#application.dsn#">
-	select * from courses
-	where course_dept = <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	SELECT  DISTINCT     Courses.*
+	FROM            Courses INNER JOIN
+                         Students_Courses ON Courses.id = Students_Courses.course_id LEFT OUTER JOIN
+                         Status ON Students_Courses.id = Status.student_course_id
+
+	where 0=0
+
+	<cfif len(trim(url.course_dept))>
+		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+	
+	<cfif len(trim(url.course_college))>
+		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+	</cfif>
+
+	ORDER BY Courses.course_crn
 </cfquery>
 
+<!--- 
 
+<cfdump var="#getCourseList#" label="getCourseList" />
+--->
 <body class="theme-darkblue" data-theme="theme-darkblue">
+
+	<div class="loader"></div>
+
 	<cfoutput>
 		<cfinclude template="dash_navigation.cfm">
 	</cfoutput>
@@ -74,13 +201,19 @@
 							<div class="box-title">
 								<h3>
 									<i class="icon-reorder"></i>
-									<cfoutput>#url.course_dept#</cfoutput>
+									<b><cfoutput>#url.course_college# - 
+									<cfif len(trim(#url.course_dept#))>
+										#url.course_dept#
+									<cfelse>
+										All Departments
+									</cfif>
+								</cfoutput></b>
 								</h3>
 								<ul class="tabs">
-									<li class="active">
+									<li class="">
 										<a data-toggle="tab" href="#t1">Faculty List</a>
 									</li>
-									<li class="">
+									<li class="active">
 										<a data-toggle="tab" href="#t2">Student List</a>
 									</li>
 									
@@ -92,7 +225,7 @@
 							<div class="box-content">
 								<div class="tab-content">
 									<!--- BEGIN: tab1 List by Faculty --->
-									<div id="t1" class="tab-pane active">
+									<div id="t1" class="tab-pane">
 										<h4>Faculty List</h4>
 										<!---
 										 <div class="search-results">
@@ -133,17 +266,18 @@
 															<thead>
 																<tr>
 																	
+																	<th>Status</th>
 																	<th>Last Name</th>
 																	<th class='hidden-350'>First Name</th>
 																	<th>ZNUMBER</th>
-																	<th>Status</th>
 																	<th class='hidden-1024'>Action</th>
 																	
 																</tr>
 															</thead>
 															<tbody>
-																<cfoutput query="getFacultyList" group="prof_last_name" >
+																<cfoutput query="getFacultyList" group="prof_id" >
 																
+																<!---
 																<cfquery name="countfacultyrisks" datasource="#application.dsn#">
 																	SELECT  count(*) AS riskcount
 																	FROM            Professors_Courses INNER JOIN
@@ -153,20 +287,18 @@
 																	AND status.status = 1
 																	AND   professors.prof_id = <cfqueryparam value="#getFacultyList.prof_id#" CFSQLType="cf_sql_varchar" />
 																</cfquery>
-
+																--->
+										
 																<tr>
-																	
-																	<td>#getFacultyList.prof_last_name#</td>
-																	<td class='hidden-350'>#getFacultyList.prof_first_name#</td>
-																	<td>#getFacultyList.prof_id#</td>
-
-																	<cfif countfacultyrisks.riskcount >
+																	<cfif ListContains(#ValueList(getFacultyZnumbers.prof_id)#, getFacultyList.prof_id) >
 																		<td class='alert alert-error'>Warning</td>
 																	<cfelse>
 																		<td class='alert alert-info'>None indicated</td>
 																	</cfif>
-
-																	<td class='hidden-1024'><a href="courseenrollments.cfm?prof_id=#getFacultyList.prof_id#">View courses taught</a></td>	
+																	<td>#getFacultyList.prof_last_name#</td>
+																	<td class='hidden-350'>#getFacultyList.prof_first_name#</td>
+																	<td>#getFacultyList.prof_id#</td>
+																	<td class='hidden-1024'><a href="courseenrollments.cfm?prof_id=#getFacultyList.prof_id#&course_dept=#urlencodedformat(url.course_dept)#&course_college=#urlencodedformat(course_college)#">View courses taught</a></td>	
 														
 																</tr>
 																</cfoutput>												
@@ -183,7 +315,7 @@
 									</div>
 									<!-- END: tab1 List by Faculty -->
 									<!-- BEGIN: tab2 List by Student -->
-									<div id="t2" class="tab-pane">
+									<div id="t2" class="tab-pane active">
 										<h4>Student List</h4>
 										
 										<!---
@@ -211,11 +343,15 @@
 											</ul>									
 										</div><!--- end of searc-results --->
 										--->
+										
+										<!---
+										<cfdump var="#getStudentList#" label="getStudentList - 313" />
+										--->
 
 										<!--- begin dynamic table STUDENT LIST --->
 										<div class="row-fluid">
 											<div class="span12">
-												<div class="box box-color box-bordered darkblue">
+												<div class="box box-color box-bordered red">
 													<div class="box-title">
 														<h3>
 															<i class="icon-table"></i>
@@ -227,26 +363,36 @@
 															<thead>
 																<tr>
 																	
+																	<th>Status</th> 
 																	<th>Last Name</th>
 																	<th class='hidden-350'>First Name</th>
 																	<th>ZNUMBER</th>
-																	<th>Status</th>
+																	<th>CRN</th>
+																	
 																	<th class='hidden-1024'>Action</th>
 																</tr>
 															</thead>
 															<tbody>
-																<cfoutput query="getStudentList">
+																<cfoutput query="getStudentList" group="znumber">
 																<tr>
+																	<!--- <cfif  getStudentList.statuscount GT 0> --->
+																	<cfif ListContains(#ValueList(getStudentZnumbersAtRisk.student_id)#, getStudentList.znumber) >
+																		<td class='alert alert-error'>Warning</td>
+
+																	<cfelseif ListContains(#ValueList(getStudentZnumbersOutreach.student_id)#, getStudentList.znumber) >	
+																		<td class='alert'>Outreach Completed</td>
+																	<cfelse>
+																		<td class='alert alert-info'>None indicated </td>
+																	</cfif>
+
 																	<td>#getStudentList.student_last_name#</td>
 																	<td class='hidden-350'>#getStudentList.student_first_name#</td>
 																	<td>#getStudentList.znumber#</td>
-																	<cfif getStudentList.status eq 1>
-																		<td class='alert alert-error'>Warning</td>
-																	<cfelse>
-																		<td class='alert alert-info'>None indicated</td>
-																	</cfif>
+																	<td>#getStudentList.course_crn#</td>																	
 																	
-																	<td class='hidden-1024'><a href="studentenrollments.cfm?znumber=#getStudentList.znumber#">View all courses</a></td>											
+																	
+																	
+																	<td class='hidden-1024'><a href="studentenrollments.cfm?znumber=#getStudentList.znumber#&course_dept=#urlencodedformat(url.course_dept)#&course_college=#urlencodedformat(course_college)#">View all courses</a></td>											
 																</tr>
 																</cfoutput>
 																
@@ -266,7 +412,7 @@
 										<!--- begin dynamic table COURSE LIST --->
 										<div class="row-fluid">
 											<div class="span12">
-												<div class="box box-color box-bordered red">
+												<div class="box box-color box-bordered lightgrey">
 													<div class="box-title">
 														<h3>
 															<i class="icon-table"></i>
@@ -277,24 +423,44 @@
 														<table id="studenttable" class="table table-hover table-nomargin dataTable table-bordered">
 															<thead>
 																<tr>
-																	
+																	<th>Status</th>
 																	<th>Course Title</th>
 																	<th>Course CRN</th>
 																	<th class='hidden-350'>Course Type</th>
 																	<th>Course Campus</th>
-																	<th>Course Term</th>
+																	<th>Course Term</th>																	
 																	<th class='hidden-1024'>Action</th>
 																</tr>
 															</thead>
 															<tbody>
 																<cfoutput query="getCourseList">
+																
+																
+																<cfquery name="countCourseRisks" datasource="#application.dsn#">
+																	SELECT       count(*) as riskcount
+																	FROM            Courses INNER JOIN
+																	                         Students_Courses ON Courses.id = Students_Courses.course_id INNER JOIN
+																	                         Status ON Students_Courses.id = Status.student_course_id
+																	WHERE         0=0
+																	AND        Status.status = 1
+																	AND  Courses.course_crn = <cfqueryparam value="#getCourseList.course_crn#" CFSQLType="cf_sql_integer" />
+																</cfquery>
+																
+
 																<tr>
+																	 <cfif countCourseRisks.riskcount>
+																	<!---<cfif getCourseList.status eq 1> --->
+																		<td class='alert alert-error'>Warning</td>
+																	<cfelse>
+																		<td class='alert alert-info'>None indicated</td>
+																	</cfif>
 																	<td>#getCourseList.course_sub# - #getCourseList.course_num# - #getCourseList.course_title#</td>
 																	<td>#getCourseList.course_crn#</td>
 																	<td class='hidden-350'>#getCourseList.course_type#</td>
 																	<td>#getCourseList.course_campus#</td>
 																	<td>#getCourseList.course_term#</td>
-																	<td class='hidden-1024'><a href="completeenrollments.cfm?crn=#getCourseList.course_crn#">View enrollment</a></td>											
+																	
+																	<td class='hidden-1024'><a href="completeenrollments.cfm?crn=#getCourseList.course_crn#&course_dept=#urlencodedformat(url.course_dept)#&course_college=#urlencodedformat(course_college)#">View enrollment</a></td>											
 																</tr>
 																</cfoutput>
 																

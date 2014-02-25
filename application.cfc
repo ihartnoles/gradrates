@@ -1,5 +1,5 @@
 <cfcomponent>
-<cfset This.name = "localGradRateWarnings">
+<cfset This.name = "DEVGRADRATES">
 <cfset This.loginStorage = "session" >
 <cfset This.Sessionmanagement=true>
 <cfset This.Sessiontimeout="#createtimespan(0,2,0,0)#">
@@ -64,7 +64,8 @@
         Application.availableResources=0;
         Application.counter1=1;
         Application.sessions=0;
-        Application.dsn = 'GraduationRates';
+        Application.dsn = 'RW_Gras';
+        Application.impersonate = false ;
         resetAppFramework();
     </cfscript>
     <!--- You do not need to return True if you don't set the cffunction returntype attribute. --->
@@ -98,25 +99,12 @@
     --->
     <cfset handleRequestSecurity(arguments.targetpage) /> 
 
+    <cfif NOT handleRequestSecurity(arguments.targetpage) >
+          <cfset do403(arguments.targetPage)>
+    </cfif>
+
 </cffunction>
 
-<!---
-<cffunction name="onRequest">
-    <cfargument name = "targetPage" type="String" required=true/>
-    <cfsavecontent variable="content">
-        <cfinclude template=#Arguments.targetPage#>
-    </cfsavecontent>
-
-    
-    
-
-    <!--- This is a minimal example of an onRequest filter. --->
-    <cfoutput>
-        #content# 
-    </cfoutput>
-   
-</cffunction>
---->
 
 <!--- Display a different footer for logged in users than for guest users or
          users who have not logged in. --->
@@ -131,6 +119,24 @@
         <cfinclude template="authuserfooter.cfm">
     </cfif>  
     --->
+    <!--- LOGGING STARTS HERE insert into AccessLog --->
+    <cfquery name="logRequest" datasource="#application.dsn#">
+        INSERT INTO AccessLog
+           (
+           referrer
+           ,user_agent
+           ,remote_addr
+           ,created_by
+          )
+     VALUES
+           (
+           <cfqueryparam value="#cgi.HTTP_REFERER#" CFSQLType="cf_sql_varchar">
+           ,<cfqueryparam value="#cgi.HTTP_USER_AGENT#" CFSQLType="cf_sql_varchar">
+           ,<cfqueryparam value="#cgi.REMOTE_ADDR#" CFSQLType="cf_sql_varchar">
+           ,<cfqueryparam value="#session.casuser.getusername()#" CFSQLType="cf_sql_varchar" />
+           )
+    </cfquery>
+    
 </cffunction>
 
 <cffunction name="OnSessionStart"
@@ -150,6 +156,26 @@
         //Initialize CAS
         Session.CAS = CreateObject("Component", "SharedComponents.Authentication.CAS").init(variables.CASArguments);
     </cfscript>
+
+
+    <!---
+    <cfquery name="qAccessLevel" datasource="#application.dsn#">
+        select top 1 * from permissions
+        where username = <cfqueryparam value="#session.cas.getusername()#" CFSQLType="cf_sql_varchar" />
+    </cfquery>
+
+    <cfdump var="#qAccessLevel#" label="qAccessLevel - application.cfc - line 161" abort="true" />
+    <cfabort>
+    --->
+
+    <!---
+    <cfif Application.impersonate >
+        <!--- temporarily set the session.gras here; in prod we will matchp with an access control list--->
+        <cfset session.gras.role = 8>
+        <cfset session.gras.home_dept = "">
+        <cfset session.gras.home_college = "">
+    </cfif>    
+    --->
 
     <cflock timeout="5" throwontimeout="No" type="EXCLUSIVE" scope="SESSION">
         <cfset Application.sessions = Application.sessions + 1>
@@ -177,7 +203,44 @@
         <cflog file="#This.Name#" type="error" 
             text="Root Cause Message: #exception.rootcause.message#">
     </cfif>    
-    <!--- Display an error message if there is a page context. --->
+
+        <cfset local.errorMessage = #exception# />
+
+        <cftry>
+                
+            <cfset inet = CreateObject("java", "java.net.InetAddress")>
+            <cfset inet = inet.getLocalHost()>
+            <cfset private.subject = "OnError: #local.errorMessage#" />
+
+            <cfsavecontent variable="variables.ExtraInfo">
+                <cfdump var="#arguments.Exception#" label="error">
+                <cfdump var="#inet.getHostName()#" label="HostName">
+                <cfdump var="#form#" label="form">
+                <cfdump var="#url#" label="url">
+                <cfdump var="#cgi#" label="cgi">
+                <cfif IsDefined("session")><cfdump var="#session#" label="session"></cfif>
+            </cfsavecontent>
+
+            <cfmail from="devgradrates@fau.edu" to="ihartstein@fau.edu" subject="#inet.getHostName()#: #private.subject#">
+            <cfmailpart type="text/plain">
+            An error occurred.
+            </cfmailpart>
+            <cfmailpart type="text/html">
+            <cfoutput>
+            <html>
+            <head>
+                <title>Error</title>
+            </head>
+            <body>#variables.ExtraInfo#</body>
+            </html></cfoutput>
+            </cfmailpart>
+            </cfmail>
+            <cfcatch type="any"></cfcatch>
+        
+        </cftry>
+
+
+    <!--- Display an error message if there is a page context. 
     <cfif NOT (Arguments.EventName IS onSessionEnd) OR 
             (Arguments.EventName IS onApplicationEnd)>
         <cfoutput>
@@ -185,9 +248,9 @@
             <p>Please provide the following information to technical support:</p>
             <p>Error Event: #EventName#</p>
             <p>Error details:<br>
-            <cfdump var=#exception#></p>
+            <!---<cfdump var=#exception#></p>--->
         </cfoutput>
-    </cfif>
+    </cfif>--->
  </cffunction>
 
  <cffunction    name="resetAppFramework" access="private" returntype="void" output="false">
@@ -231,10 +294,145 @@
             Session.CASUser = CreateObject("Component", "SharedComponents.Authentication.User").Init(Session.Cas.getUsername());
         }
 
-    return true;      
+    //return true;      
     </cfscript>
 
+   
+
+    <!---
+    <cfdump var="#qAccessLevel#" label="qAccessLevel - application.cfc - line 260" output="C:\inetpub\wwwroot\gradrates\access.html" format="html" />
+    --->
+
+    <!--- this runs when  Application.impersonate = false; This should be the case in PRODUCTION --->
+    <cfif NOT Application.impersonate  >
+        <cfquery name="qAccessLevel" datasource="#application.dsn#">
+            SELECT TOP 1  Permissions.username, Permissions.permission, Permissions.college_id, Permissions.dept_id, Colleges.course_college, Departments.course_dept
+            FROM            Colleges INNER JOIN
+                                     Departments ON Colleges.id = Departments.college_id INNER JOIN
+                                     Permissions ON Departments.college_id = Permissions.college_id
+            where username = <cfqueryparam value="#session.casuser.getusername()#" CFSQLType="cf_sql_varchar" />
+        </cfquery>
+
+        <cfif qAccessLevel.recordcount >
+            <cfset session.gras.role = #qAccessLevel.permission#>
+            <cfset session.gras.home_dept = #qAccessLevel.course_dept#>
+            <cfset session.gras.home_college = #qAccessLevel.course_college#>
+        <cfelse>
+            <cfreturn false />
+        </cfif>
+    <cfelse>
+         <!--- this runs when  Application.impersonate = TRUE; This should be the case in DEVELOPMENT --->
+         <cfset impersonate = doImpersonate('ihartstein')>
+
+         <cfif impersonate.recordcount>
+            <cfset session.gras.role = #impersonate.permission#>
+            <cfset session.gras.home_dept = #impersonate.course_dept#>
+            <cfset session.gras.home_college = #impersonate.course_college#>
+         </cfif>
+
+    </cfif>
+        
+    
+    <cfreturn true />
 </cffunction>
+
+<cffunction name="doImpersonate" access="private" output="true" returntype="query" hint="I am used to impersonate a user">
+        <cfargument name="username" type="string" required="true">
+
+        <cfset local.qAccessLevel = "">
+
+        <cfquery name="local.qAccessLevel" datasource="#application.dsn#">
+            SELECT TOP 1  Permissions.username, Permissions.permission, Permissions.college_id, Permissions.dept_id, Colleges.course_college, Departments.course_dept
+            FROM            Colleges INNER JOIN
+                                     Departments ON Colleges.id = Departments.college_id INNER JOIN
+                                     Permissions ON Departments.college_id = Permissions.college_id
+            where username = <cfqueryparam value="#arguments.username#" CFSQLType="cf_sql_varchar" />
+        </cfquery>
+
+        <cfreturn local.qAccessLevel />
+</cffunction>
+
+
+<cffunction name="do403" access="private" output="true" returntype="boolean" hint="I display a 404 error">
+    <cfargument name="targetPage" type="string" required="true">
+    <cfset var private = {}>
+
+       <!doctype html class="no-js">
+        <html>
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                <!-- Apple devices fullscreen -->
+                <meta name="apple-mobile-web-app-capable" content="yes" />
+                <!-- Apple devices fullscreen -->
+                <meta names="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+                
+                <title><cfoutput>#application.displayname#</cfoutput></title>
+
+                <!-- Bootstrap -->
+                <link rel="stylesheet" href="css/bootstrap.min.css">
+                <!-- Bootstrap responsive -->
+                <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+                <!-- jQuery UI -->
+                <link rel="stylesheet" href="css/plugins/jquery-ui/smoothness/jquery-ui.css">
+                <link rel="stylesheet" href="css/plugins/jquery-ui/smoothness/jquery.ui.theme.css">
+                <!-- PageGuide -->
+                <link rel="stylesheet" href="css/plugins/pageguide/pageguide.css">
+                <!-- Fullcalendar -->
+                <link rel="stylesheet" href="css/plugins/fullcalendar/fullcalendar.css">
+                <link rel="stylesheet" href="css/plugins/fullcalendar/fullcalendar.print.css" media="print">
+                <!-- chosen -->
+                <link rel="stylesheet" href="css/plugins/chosen/chosen.css">
+                <!-- select2 -->
+                <link rel="stylesheet" href="css/plugins/select2/select2.css">
+                <!-- icheck -->
+                <link rel="stylesheet" href="css/plugins/icheck/all.css">
+                <!-- Theme CSS -->
+                <link rel="stylesheet" href="css/style.css">
+                <!-- Color CSS -->
+                <link rel="stylesheet" href="css/themes.css">
+
+                <!-- rating CSS -->
+                <link rel="stylesheet" href="css/jquery.rating.css">
+
+                
+                <!-- jQuery -->
+                <script src="js/jquery.min.js"></script>
+
+
+                <!--[if lte IE 9]>
+                    <script src="js/plugins/placeholder/jquery.placeholder.min.js"></script>
+                    <script>
+                        $(document).ready(function() {
+                            $('input, textarea').placeholder();
+                        });
+                    </script>
+                <![endif]-->
+                
+
+                <!-- Favicon -->
+                <link rel="shortcut icon" href="img/favicon.ico" />
+                <!-- Apple devices Homescreen icon -->
+                <link rel="apple-touch-icon-precomposed" href="img/apple-touch-icon-precomposed.png" />
+
+            </head>
+
+            <body class='error' style="background-color: ##204e81;">
+                <div class="wrapper">
+                    <div class="code"><span>403</span><i class="icon-warning-sign"></i></div>
+                    <div class="desc">Forbidden.</div>
+                    <div class="desc">You do not have access to this resource.</div>
+                    
+                    
+                </div>
+                
+            </body>
+
+        </html>
+        
+    <cfreturn true>
+</cffunction>
+
 
 
 </cfcomponent>

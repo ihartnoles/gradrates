@@ -400,7 +400,9 @@ $(document).ready(function() {
 					"sSearch": "<span>Search:</span> ",
 					"sInfo": "Showing <span>_START_</span> to <span>_END_</span> of <span>_TOTAL_</span> entries",
 					"sLengthMenu": "_MENU_ <span>entries per page</span>"
-				}
+				},
+				//"oSearch": {"sSearch": "Warning"}
+				"aaSorting": [[ 0, "desc" ]]
 			};
 			if($(this).hasClass("dataTable-noheader")){
 				opt.bFilter = false;

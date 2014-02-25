@@ -1,9 +1,15 @@
+<cfinclude template="securityrestrictions.cfm" />
+
 <cfinclude template="layout/header.cfm" />
 
 
 <cfparam name="url.prof_id" default="" />
+<cfparam name="url.course_dept" default="" />
+<cfparam name="url.course_college" default="" />
 
-<cfquery name="getCourses" datasource="#application.dsn#">
+
+
+<cfquery name="getCourses" datasource="#application.dsn#" cachedwithin="#createtimespan(0,1,0,0)#">
 SELECT   DISTINCT     Courses.course_sub, Courses.course_num, Courses.course_title, Courses.course_crn, Professors.prof_id, Professors.prof_first_name, Professors.prof_last_name
 FROM     Courses INNER JOIN
                          Professors_Courses ON Courses.id = Professors_Courses.course_id INNER JOIN
@@ -22,30 +28,33 @@ ORDER BY Professors.prof_id
 	</cfoutput>
 
 
-
 <div class="container-fluid">
-		
-
-
-
-		
 					<div class="row-fluid">
 						<div class="span12">
 							<div class="box">
 								<div class="box-title">
 									<h3>
 										<i class="icon-reorder"></i>
-										Spring 2014 - Courses Taught by <cfoutput>  #getCourses.prof_first_name#  #getCourses.prof_last_name# </cfoutput>
+										<b>Spring 2014 - Courses Taught - Instructor: <cfoutput><i>#getCourses.prof_first_name#  #getCourses.prof_last_name#</i></cfoutput></b>
 									</h3>
 								</div>
+								
+								
+
 								<div class="box-content">
+									<div class="row-fluid">
+										<cfoutput>
+										<a href="facultylist.cfm?course_college=#urlencodedformat(url.course_college)#&course_dept=#urlencodedformat(url.course_dept)#">Go Back</a>
+										</cfoutput>
+									</div>
+
 									<div id="accordion2" class="accordion">
 										
 										
 										<cfoutput query="getCourses">
 
 
-											<cfquery name="getEnrollments" datasource="#application.dsn#">
+											<cfquery name="getEnrollments" datasource="#application.dsn#" cachedwithin="#createtimespan(0,1,0,0)#">
 												SELECT   DISTINCT     Students.id, Students.student_id, Students.student_last_name, Students.student_first_name, Courses.course_crn, Courses.course_sub, 
 												                         Courses.course_num, Courses.course_title, Students_Courses.ID as students_courses_id
 												FROM            Students INNER JOIN
@@ -102,8 +111,8 @@ ORDER BY Professors.prof_id
 																				WHERE  Students_Courses.id = #getEnrollments.students_courses_id#
 																			</cfquery>
 																			
-																			<!--- 
-																				<cfdump var="#getStatuses#" label="getStatuses" /> <br>
+																			<!---
+																			<cfdump var="#getStatuses#" label="getStatuses" /> <br>
 																			--->
 																			
 																			<cfquery name="getComments" datasource="#application.dsn#">
@@ -114,8 +123,13 @@ ORDER BY Professors.prof_id
 																				                         Students ON Students_Courses.student_id = Students.id
 																				WHERE 		 Comments.student_course_id = <cfqueryparam value="#getEnrollments.students_courses_id#" CFSQLType="cf_sql_integer" />
 																			</cfquery>
-
-																			<tr>
+																			
+																			<cfif getStatuses.status EQ 1>
+																				<tr class="alert">
+																			<cfelse>
+																				<tr>
+																			</cfif>
+																			
 																				<td>#getEnrollments.student_id#</td>
 																				<td>#getEnrollments.student_last_name#</td>
 																				<td>
@@ -128,14 +142,25 @@ ORDER BY Professors.prof_id
 																							<label class="radio">
 																								<input type="radio" name="atrisk-#getCourses.currentrow#-#getEnrollments.currentrow#" value="1" class="atrisk" data-modal="#getCourses.currentrow#-#getEnrollments.currentrow#" <cfif getStatuses.status EQ 1>checked</cfif>> At-Risk
 																							</label>
+
+																							<!---
+																							<a data-notify-message="The user has been successfully edited." data-notify-title="Success!" data-notify-time="1000" class="btn notify" role="button" href="#modal-1">Timed fade notification (1second)</a>
+																							--->
+
 																							<label class="radio">
-																								<input type="radio" class="noissues" name="atrisk-#getCourses.currentrow#-#getEnrollments.currentrow#" value="0" data-students_courses_id="#getEnrollments.STUDENTS_COURSES_ID#" <cfif getStatuses.status EQ 0>checked</cfif>> No issues
-																							</label>																							
+																								<input type="radio" class="noissues notify" name="atrisk-#getCourses.currentrow#-#getEnrollments.currentrow#" value="0" data-notify-message="The status has been updated." data-notify-title="Success!" data-notify-time="6000" data-students_courses_id="#getEnrollments.STUDENTS_COURSES_ID#" <cfif getStatuses.status EQ 0>checked</cfif>> No issues
+																							</label>	
+
+																							<cfif session.gras.role gte 4 >
+																								<label class="radio">
+																									<input type="radio" class="noissues outreach" name="atrisk-#getCourses.currentrow#-#getEnrollments.currentrow#" value="3" data-notify-message="The status has been updated." data-notify-title="Success!" data-notify-time="6000" data-students_courses_id="#getEnrollments.STUDENTS_COURSES_ID#" <cfif getStatuses.status EQ 3>checked</cfif>> Outreach completed
+																								</label>
+																							</cfif>																							
 																						</div>
 																					</div>
 																				</td>
 																				<td class="hidden-1024">
-																				   <a href="##modal-#getCourses.currentrow#-#getEnrollments.currentrow#" role="button" class="btn btn-small btn-darkblue" data-toggle="modal" data-checklistTypeid="1">
+																				   <a href="##modal-#getCourses.currentrow#-#getEnrollments.currentrow#" role="button" class="btn btn-small btn-darkblue" data-toggle="modal" data-prof-id="#trim(url.prof_id)#">
 																																	<i class="icon-plus-sign"></i>
 																																		Add a comment
 																																	</a>
@@ -171,7 +196,7 @@ ORDER BY Professors.prof_id
 																								
 																								<input type="hidden" name="student_id"  value="#getEnrollments.id#" />
 																								<input type="hidden" name="students_courses_id" class="students_courses_id" value="#getEnrollments.students_courses_id#" />
-																								
+																								<input type="hidden" name="prof_id"  value="#url.prof_id#" />
 
 																									<div class="control-group">
 																									<label for="textarea" class="control-label"><strong>Comment</strong></label>
@@ -271,8 +296,12 @@ ORDER BY Professors.prof_id
 
 
 				$(".closeButton").click(function(e) {
-						var prof_id   	  	 = $(this).closest('.modal-body').find('.prof_id').val();
-						window.location.href = "courseenrollments.cfm?prof_id=" + prof_id ;
+						
+					 	//var prof_id    = $(this).closest('.modal-body').find('.prof_id').val();
+
+					 	//alert('prof_id:' + prof_id);
+
+					 	window.location.href = "courseenrollments.cfm?prof_id=#urlencodedformat(url.prof_id)#&course_dept=#urlencodedformat(url.course_dept)#&course_college=#urlencodedformat(url.course_college)#" ;
 				});
 
 
@@ -284,7 +313,7 @@ ORDER BY Professors.prof_id
 					var created_by       	= '#session.casuser.getusername()#' ;
 					var comment 		  	= $(this).closest('.modal-body').find('.comment').val();
 					var status              = $(this).closest('.modal-body').find('.status').val();
-
+					
 					if (!comment.trim()) {
 					    alert('Comments are required! Please enter a comment now.');
 					    return false;					    			   
@@ -293,9 +322,9 @@ ORDER BY Professors.prof_id
 					var postString = "savecomments.cfm";
 
 					//alert( postString );
-					alert( 'students_courses_id ' + students_courses_id );
-					alert( 'comment ' + comment );
-					alert( 'status ' + status );
+					//alert( 'students_courses_id ' + students_courses_id );
+					//alert( 'comment ' + comment );
+					//alert( 'status ' + status );
 					
 					//alert( created_by );
 					//return false;
@@ -342,7 +371,33 @@ ORDER BY Professors.prof_id
 
 						//callback function
 						function(data){
-							window.location.href = "courseenrollments.cfm?prof_id=" + prof_id;
+							window.location.href = "courseenrollments.cfm?prof_id=" + prof_id + "&course_dept=#urlencodedformat(url.course_dept)#&course_college=#urlencodedformat(url.course_college)#" ;
+						}
+					)
+				});
+
+				$(".outreach").click(function(e) {
+					//alert('Wide Open');
+					var status  = $(this).closest('.controls').find('.outreach').val();
+					//alert( 'status ' + status );
+					var students_courses_id = $(this).data("students_courses_id");
+					//alert( 'students_courses_id ' + students_courses_id );
+					
+					var prof_id = '#url.prof_id#' ;
+
+					var postString = "savestatus.cfm";
+
+					jQuery.post(
+						postString,
+						{
+							students_courses_id: students_courses_id,
+							status: status
+							
+						},
+
+						//callback function
+						function(data){
+							window.location.href = "courseenrollments.cfm?prof_id=" + prof_id + "&course_dept=#urlencodedformat(url.course_dept)#&course_college=#urlencodedformat(url.course_college)#" ;
 						}
 					)
 				});

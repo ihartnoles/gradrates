@@ -1,94 +1,54 @@
-<cfinclude template="layout/header.cfm" />
-
-
-<cfquery name="getColleges" datasource="#application.dsn#">
-	select distinct course_college, course_dept
-	from courses
-	order by course_college, course_dept
-</cfquery>
-
-
-<body class="theme-darkblue" data-theme="theme-darkblue">
-	<cfoutput>
-		<cfinclude template="dash_navigation.cfm">
-	</cfoutput>
-
-
-
-	<div class="container-fluid">
-					<!--
-					<div class="row-fluid">
-						<div class="span12">
-							<div class="box">
-								<div class="box-title">
-									<h3>
-										<i class="icon-reorder"></i>
-										Admin Panel
-									</h3>
-								</div>
-								<div class="box-content">
-									
-								</div>
-							</div>
-						</div>
-					</div>
-					-->
+<!---
+ <cfdump var="#session#" abort="true" />
+ --->
+<cfswitch expression="#session.gras.role#">
 	
-			<div class="row-fluid">
-					<div class="span12">
-						<div class="box">
-							<div class="box-title">
-								<h3>
-									<i class="icon-reorder"></i>
-									Colleges
-								</h3>
-							</div>
-							<div class="box-content">
-								
-								
-								<div class="search-results">
-									<ul>
+	<cfcase value="8">
+		<!--- admin role --->
+		<!--- 
+		<cfset session.gras.role = 8>
+		<cfset session.gras.home_dept = "">
+		<cfset session.gras.home_college = ""> 
+		--->
+		<cfset redirect="main.cfm" />
+	</cfcase>
 
-										<cfoutput query="getColleges"  group="course_college">
-										<li>
-											<div class="search-info">
-												<div class="span12">
-													<h4>#getColleges.course_college#</h4>
-												</div>
-												<cfoutput group="course_dept">
-													<div class="span3">
-													<a href="facultylist.cfm?course_dept=#urlencodedformat(getColleges.course_dept)#">#getColleges.course_dept#</a>
-													</div>
-												</cfoutput>
-											</div>
-										</li>
-										</cfoutput>
+	<cfcase value="4">
+		<!--- advisor role --->
+		<!--- 
+		<cfset session.gras.role = 4>
+		<cfset session.gras.home_dept = "">
+		<cfset session.gras.home_college = "College of Business">
+		 --->
+		<cfset redirect="main.cfm?course_college=" & session.gras.home_college />
+	</cfcase>
 
-									
-										
-									</ul>
-								</div>
-								
-								<!---
-								<cfoutput query="getColleges">
-									<div class ="span3">
-										<div class="well sidebar-nav" style="background-color:##fcf8e3; margin:5px;">
-							              <h5>#getColleges.course_college#</h5>
-							              <br><div class="btn" onclick="window.location.href='/newhires/departments?school_id=1'">View departments</div><p></p>
-							            </div>
-						            </div>
-								</cfoutput>
-								--->
+	<cfcase value="2">
+		<!--- department role --->
+		<!--- 
+		<cfset session.gras.role = 2>
+		<cfset session.gras.home_dept = "Info Tech and Oper Mgmt"> 
+		<cfset redirect="main.cfm?course_college=College%20of%20Business&course_dept=Info%20Tech%20and%20Oper%20Mgmt" />
+		--->
+		<cfset redirect="main.cfm?course_college=" & session.gras.home_college & "&course_dept=" & session.gras.home_dept />
+	</cfcase>
 
-							</div>
+	<cfdefaultcase>
+		<!--- default to faculty --->
+		<!---
+		<cfset session.gras.role = 1>
+		<cfset session.gras.home_dept = "Info Tech and Oper Mgmt">
+		<cfset redirect="courseenrollments.cfm?prof_id=Z00009867&course_dept=Info%20Tech%20and%20Oper%20Mgmt&course_college=College%20of%20Business" /> 
+		--->
+		<cfif cgi.SERVER_NAME eq "10.16.8.235">
+			<cfset redirect="courseenrollments.cfm?prof_id=Z23105885&course_college=" & session.gras.home_college & "&course_dept=" & session.gras.home_dept />
+		<cfelse>
+			<cfset redirect="courseenrollments.cfm?prof_id=" & session.casuser.getznumber() & "&course_college=" & session.gras.home_college & "&course_dept=" & session.gras.home_dept />
+		</cfif>
+		
 
-						</div>
-					</div>
-				</div>
-	</div><!-- end of container-fluid -->
-	
-</body>
+	</cfdefaultcase>
 
+</cfswitch>
 
-
-</html>
+<cflocation url="#redirect#" addtoken="true" />
