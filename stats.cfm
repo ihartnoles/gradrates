@@ -9,24 +9,43 @@ SELECT   TOP 1
 			(SELECT DISTINCT count(*)
 				FROM            courses 
 						 
-			
+				WHERE courses.course_college <> 'C.E. Schmidt Coll  Med'
 			
 			) as coursecount,
 
-			(SELECT DISTINCT count(*)
-				FROM            Students 
-						 
-			
-			
-			) as studentcount
+			(
+				SELECT  count(DISTINCT Students.student_id)
+				FROM            Students INNER JOIN
+				                         Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
+				                         Courses ON Students_Courses.course_id = Courses.id INNER JOIN
+				                         Colleges INNER JOIN
+				                         Departments ON Colleges.id = Departments.college_id ON Courses.course_dept = Departments.course_dept
 
-			, (SELECT DISTINCT count(*)
+				WHERE courses.course_college <> 'C.E. Schmidt Coll  Med'
+			
+			) as studentcount,
+
+			(
+
+
+				SELECT     count(DISTINCT  Professors.prof_id)
+				FROM            Professors INNER JOIN
+				                         Professors_Courses ON Professors.id = Professors_Courses.prof_id INNER JOIN
+				                         Courses ON Professors_Courses.course_id = Courses.id INNER JOIN
+				                         Departments ON Courses.course_dept = Departments.course_dept INNER JOIN
+				                         Colleges ON Departments.college_id = Colleges.id
+
+				WHERE courses.course_college <> 'C.E. Schmidt Coll  Med'
+			) as professsorcount,
+
+			(SELECT DISTINCT count(*)
 				FROM            Students INNER JOIN
                          Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
                          Courses ON Students_Courses.course_id = Courses.id 
 						 LEFT OUTER JOIN
                          Status ON Students_Courses.id = Status.student_course_id
 			 WHERE status.status = 1
+			 AND courses.course_college <> 'C.E. Schmidt Coll  Med'
 			
 			) as atriskcount
 
@@ -53,6 +72,8 @@ SELECT  DISTINCT TOP 10 Students.student_id AS znumber, Students.student_last_na
 										                         Courses ON Students_Courses.course_id = Courses.id LEFT OUTER JOIN
 										                         Status ON Students_Courses.id = Status.student_course_id
 										    WHERE 0=0
+
+										    AND courses.course_college <> 'C.E. Schmidt Coll  Med'
 											
 ORDER BY statuscount DESC, student_last_name
 </cfquery>
@@ -75,7 +96,7 @@ SELECT  DISTINCT TOP 10    c.*, (
 	FROM            Courses c INNER JOIN 
                          Students_Courses ON c.id = Students_Courses.course_id LEFT OUTER JOIN
                          Status ON Students_Courses.id = Status.student_course_id 
-						 
+	WHERE  c.course_college <> 'C.E. Schmidt Coll  Med'				 
 
 ORDER BY riskcount DESC, course_title
 </cfquery>
@@ -102,6 +123,8 @@ ORDER BY riskcount DESC, course_title
                          Professors_Courses ON c.id = Professors_Courses.course_id INNER JOIN
                          Professors ON Professors_Courses.prof_id = Professors.id 
 	WHERE 0=0
+
+	AND c.course_college <> 'C.E. Schmidt Coll  Med'
 
 ORDER by riskcount DESC, Professors.prof_last_name
 </cfquery>
@@ -138,9 +161,10 @@ ORDER by riskcount DESC, Professors.prof_last_name
 										<div class="span12">									
 											<div class="alert alert-info text-center">
 												<cfoutput>
-													<strong>Total Courses</strong> : #getQuickStats.coursecount# | 
 													<strong>Total Students</strong> : #getQuickStats.studentcount# |
-													<strong>At-risk flags issued</strong>: #getQuickStats.atriskcount#								
+													<strong>Total Courses</strong> : #getQuickStats.coursecount# | 
+													<strong>Total Instructors</strong> : #getQuickStats.professsorcount# |
+													<strong>At-risk flags issued</strong>: #getQuickStats.atriskcount# 																
 												</cfoutput>
 											</div>
 										</div>

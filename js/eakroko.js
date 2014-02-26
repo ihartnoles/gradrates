@@ -402,7 +402,7 @@ $(document).ready(function() {
 					"sLengthMenu": "_MENU_ <span>entries per page</span>"
 				},
 				//"oSearch": {"sSearch": "Warning"}
-				"aaSorting": [[ 0, "desc" ]]
+				//"aaSorting": [[ 0, "desc" ]]
 			};
 			if($(this).hasClass("dataTable-noheader")){
 				opt.bFilter = false;

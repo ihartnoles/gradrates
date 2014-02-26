@@ -11,39 +11,51 @@ SELECT   TOP 1
 				
 				WHERE 0=0
 
+				AND courses.course_college <> 'C.E. Schmidt Coll  Med'
+
 				<cfif StructKeyExists(session['gras'], "role") AND session.gras.role eq 4>
-					AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+					AND	courses.course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
 				</cfif>
 			
 			) as coursecount,
 
 			(
-				<!--- <cfif StructKeyExists(session['gras'], "role") AND session.gras.role eq 8> --->
-					SELECT DISTINCT count(*)
-					FROM            Students 
-				<!--- <cfelse> 
-					SELECT  DISTINCT Students.id
-					FROM            Departments INNER JOIN
-					                         Colleges ON Departments.college_id = Colleges.id INNER JOIN
-					                         Students INNER JOIN
-					                         Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
-					                         Courses ON Students_Courses.course_id = Courses.id ON Departments.course_dept = Courses.course_dept
-					WHERE 0=0
-					AND course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
-				</cfif> --->
-			
-			) as studentcount
+				
+				SELECT  count(DISTINCT Students.student_id)
+				FROM            Students INNER JOIN
+				                         Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
+				                         Courses ON Students_Courses.course_id = Courses.id INNER JOIN
+				                         Colleges INNER JOIN
+				                         Departments ON Colleges.id = Departments.college_id ON Courses.course_dept = Departments.course_dept
 
-			, (SELECT DISTINCT count(*)
+				WHERE courses.course_college <> 'C.E. Schmidt Coll  Med'
+			
+			) as studentcount, 
+
+			(
+
+				SELECT     count(DISTINCT  Professors.prof_id)
+				FROM            Professors INNER JOIN
+				                         Professors_Courses ON Professors.id = Professors_Courses.prof_id INNER JOIN
+				                         Courses ON Professors_Courses.course_id = Courses.id INNER JOIN
+				                         Departments ON Courses.course_dept = Departments.course_dept INNER JOIN
+				                         Colleges ON Departments.college_id = Colleges.id
+
+				WHERE courses.course_college <> 'C.E. Schmidt Coll  Med'
+			) as professsorcount,
+
+			(SELECT DISTINCT count(*)
 				FROM            Students INNER JOIN
                          Students_Courses ON Students.id = Students_Courses.student_id INNER JOIN
                          Courses ON Students_Courses.course_id = Courses.id 
 						 LEFT OUTER JOIN
                          Status ON Students_Courses.id = Status.student_course_id
-			 WHERE status.status = 1
-				
+				 WHERE status.status = 1
+				 			 
+				 AND courses.course_college <> 'C.E. Schmidt Coll  Med'
+
 				<cfif StructKeyExists(session['gras'], "role") AND session.gras.role eq 4>
-					AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+					AND	courses.course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
 				</cfif>
 
 			) as atriskcount
@@ -55,29 +67,30 @@ SELECT   TOP 1
 </cfquery>
 
 
-<cfquery name="getColleges" datasource="#application.dsn#" cachedwithin="#createtimespan(1,0,0,0)#">
+<cfquery name="getColleges" datasource="#application.dsn#" >
 	SELECT  DISTINCT  Colleges.id, Courses.course_college, Courses.course_dept, (SELECT  count(*) as no_of_departments
 														FROM            Colleges c INNER JOIN
 																				 Departments d ON c.id = d.college_id 
 														WHERE  c.id = colleges.id
 														GROUP BY college_id) as dept_count
-FROM            Colleges INNER JOIN
+	FROM            Colleges INNER JOIN
                          Departments ON Colleges.id = Departments.college_id INNER JOIN
                          Courses ON Colleges.course_college = Courses.course_college AND Departments.course_dept = Courses.course_dept
 	where 0=0
 
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
 
 	<cfif StructKeyExists(session['gras'], "role") AND session.gras.role eq 4>
-		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+		AND	courses.course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
 	</cfif>
 
 	<cfif StructKeyExists(session['gras'], "role") AND session.gras.role eq 2>
-		AND	course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
-		AND course_dept    =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
+		AND	courses.course_college =  <cfqueryparam value="#url.course_college#" CFSQLType="cf_sql_varchar" />
+		AND courses.course_dept    =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
 	</cfif>
 
 	GROUP BY Colleges.id, Courses.course_college, Courses.course_dept
-	order by course_college, course_dept
+	order by courses.course_college, courses.course_dept
 </cfquery>
 
 
@@ -136,10 +149,10 @@ FROM            Colleges INNER JOIN
 										<div class="span12">									
 											<div class="alert alert-info text-center">
 												<cfoutput>
-													<strong>Total Courses</strong> : #getQuickStats.coursecount# | 
 													<strong>Total Students</strong> : #getQuickStats.studentcount# |
-													<strong>At-risk flags issued</strong>: #getQuickStats.atriskcount#
-													<!--- <br> <a href="stats.cfm">View Quick Stats</a> --->
+													<strong>Total Courses</strong> : #getQuickStats.coursecount# | 
+													<strong>Total Instructors</strong> : #getQuickStats.professsorcount# |
+													<strong>At-risk flags issued</strong>: #getQuickStats.atriskcount# 
 												</cfoutput>
 											</div>
 										</div>

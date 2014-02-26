@@ -14,6 +14,8 @@
                          Professors ON Professors_Courses.prof_id = Professors.id
 	WHERE 0=0
 	
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
+
 	<cfif len(trim(url.course_dept))>
 	AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
 	</cfif>
@@ -60,7 +62,9 @@ FROM            Professors FULL OUTER JOIN
 	                         Status ON Students_Courses.id = Status.student_course_id
 	WHERE  0=0
 
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
 	AND status.status = 1
+
 	
 	<cfif len(trim(url.course_dept))>
 		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
@@ -87,6 +91,8 @@ ORDER BY Professors.prof_id
                          Status ON Students_Courses.id = Status.student_course_id
     WHERE 0=0
 	
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
+
 	<cfif len(trim(url.course_dept))>
 		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
 	</cfif>	
@@ -107,6 +113,8 @@ ORDER BY Professors.prof_id
 			 WHERE      students_courses.student_id =   Students.id
 			 AND status.status = 1
 
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
+
 	<cfif len(trim(url.course_dept))>
 		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
 	</cfif>	
@@ -124,6 +132,8 @@ ORDER BY Professors.prof_id
                          Courses ON Students_Courses.course_id = Courses.id
 			 WHERE      students_courses.student_id =   Students.id
 			 AND status.status = 3
+
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
 
 	<cfif len(trim(url.course_dept))>
 		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
@@ -167,6 +177,8 @@ ORDER BY Professors.prof_id
 
 	where 0=0
 
+	AND courses.course_college <> 'C.E. Schmidt Coll  Med'
+	
 	<cfif len(trim(url.course_dept))>
 		AND	course_dept =  <cfqueryparam value="#url.course_dept#" CFSQLType="cf_sql_varchar" />
 	</cfif>
@@ -291,7 +303,7 @@ ORDER BY Professors.prof_id
 										
 																<tr>
 																	<cfif ListContains(#ValueList(getFacultyZnumbers.prof_id)#, getFacultyList.prof_id) >
-																		<td class='alert alert-error'>Warning</td>
+																		<td class='alert alert-error'>At-risk</td>
 																	<cfelse>
 																		<td class='alert alert-info'>None indicated</td>
 																	</cfif>
@@ -377,7 +389,7 @@ ORDER BY Professors.prof_id
 																<tr>
 																	<!--- <cfif  getStudentList.statuscount GT 0> --->
 																	<cfif ListContains(#ValueList(getStudentZnumbersAtRisk.student_id)#, getStudentList.znumber) >
-																		<td class='alert alert-error'>Warning</td>
+																		<td class='alert alert-error'>At-risk</td>
 
 																	<cfelseif ListContains(#ValueList(getStudentZnumbersOutreach.student_id)#, getStudentList.znumber) >	
 																		<td class='alert'>Outreach Completed</td>
@@ -450,7 +462,7 @@ ORDER BY Professors.prof_id
 																<tr>
 																	 <cfif countCourseRisks.riskcount>
 																	<!---<cfif getCourseList.status eq 1> --->
-																		<td class='alert alert-error'>Warning</td>
+																		<td class='alert alert-error'>At-risk</td>
 																	<cfelse>
 																		<td class='alert alert-info'>None indicated</td>
 																	</cfif>
